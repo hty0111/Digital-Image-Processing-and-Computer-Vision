@@ -3,37 +3,34 @@
 //
 
 #include <iostream>
-#include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
 
 #include "../include/equalization.h"
 
-using namespace cv;
-using namespace std;
-
 int main()
 {
-
-//    Mat input = imread("../../image/manipulator.png");
-    Mat gate = imread("../../image/gate.jpg", 0);
-//    cout << input.size << endl;
-    if (!gate.data)
+    // 读取图像
+    cv::Mat input_image = imread("../../image/manipulator.png", cv::IMREAD_GRAYSCALE);
+//    cv::Mat input_image = imread("../../image/gate.jpg", cv::IMREAD_GRAYSCALE);
+    if (!input_image.data)
     {
-        cout << "Path error!" << endl;
+        std::cout << "Path error!" << std::endl;
         return -1;
     }
 
-    Equalization input(gate);
-    input.showImage(input.image, "Gate Image");
-    input.showImage(input.histogram, "Gate Histogram", 0);
+    // 显示原始图像和灰度图
+    Equalization input(input_image);
+    input.showImage(input.image, "Input Image");
+    input.showImage(input.histogram, "Input Histogram", cv::Size(500, 500), 0);
 
-    Mat result = input.equalize();
+    // 对图像实施均衡化操作
+    cv::Mat result = input.equalize();
     Equalization output(result);
 
+    // 显示均衡化后的图像和灰度图
     output.showImage(output.image, "Equalized Image");
-    output.showImage(output.histogram, "Equalized Histogram", 0);
+    output.showImage(output.histogram, "Equalized Histogram", cv::Size(500, 500), 0);
 
     return 0;
 }
