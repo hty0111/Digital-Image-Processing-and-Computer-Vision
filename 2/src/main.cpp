@@ -11,8 +11,8 @@
 int main()
 {
     // 读取图像
-    cv::Mat input_image = imread("../../image/manipulator.png", cv::IMREAD_GRAYSCALE);
-//    cv::Mat input_image = imread("../../image/gate.jpg", cv::IMREAD_GRAYSCALE);
+//    cv::Mat input_image = imread("../../image/manipulator.png", cv::IMREAD_GRAYSCALE);
+    cv::Mat input_image = imread("../../image/gate.jpg", cv::IMREAD_GRAYSCALE);
     if (!input_image.data)
     {
         std::cout << "Path error!" << std::endl;
