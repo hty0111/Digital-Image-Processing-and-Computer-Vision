@@ -2,7 +2,6 @@
 
 ## 1. 工程目录
 
-​	|— `README.md`
 ​	|— `src` 
 ​      	  |— `show_image.cpp`
 ​	    	|— `play_video.cpp`	
