@@ -152,23 +152,23 @@ cv::Mat Equalization::equalize()
 
 #### 5.1.1 图像对比
 
-<img src="report.assets/gate_grey.png" alt="gate_grey" style="zoom:30%;" />
+<img src="image/gate_grey.png" alt="gate_grey" style="zoom:30%;" />
 
-<img src="report.assets/gate_equ.png" alt="gate_equ" style="zoom:30%;" />
+<img src="image/gate_equ.png" alt="gate_equ" style="zoom:30%;" />
 
 #### 5.1.2 直方图对比
 
-​        <img src="report.assets/gate_hist.jpg" alt="gate_hist" style="zoom: 50%;" />            <img src="report.assets/gate_equ_hist.png" alt="gate_equ_hist" style="zoom: 50%;" />
+​        <img src="image/gate_hist.jpg" alt="gate_hist" style="zoom: 50%;" />            <img src="image/gate_equ_hist.png" alt="gate_equ_hist" style="zoom: 50%;" />
 
 ### 5.2 灰度分布不均的图像
 
 #### 5.2.1 图像对比
 
-​                            <img src="report.assets/man_grey.png" alt="man_grey" style="zoom: 38%;" />            <img src="report.assets/man_equ.png" alt="man_equ" style="zoom:30%;" />
+​                            <img src="image/man_grey.png" alt="man_grey" style="zoom: 38%;" />            <img src="image/man_equ.png" alt="man_equ" style="zoom:30%;" />
 
 #### 5.2.2 直方图对比
 
-​        <img src="report.assets/man_hist.png" alt="man_hist" style="zoom:50%;" />            <img src="report.assets/man_equ_hist.png" alt="man_equ_hist" style="zoom:50%;" />
+​        <img src="image/man_hist.png" alt="man_hist" style="zoom:50%;" />            <img src="image/man_equ_hist.png" alt="man_equ_hist" style="zoom:50%;" />
 
 
 
