@@ -9,7 +9,7 @@ include_directories(${PROJECT_SOURCE_DIR}/image)
 
 find_package(OpenCV REQUIRED)
 
-add_executable(histogram_equalization main.cpp)
-target_link_libraries(histogram_equalization ${OpenCV_LIBS})
+add_executable(filter main.cpp Noise.cpp Filter.cpp)
+target_link_libraries(filter ${OpenCV_LIBS})
 
 
