@@ -10,6 +10,7 @@
 #include <opencv2/core.hpp>
 
 class Filter {
+public:
     cv::Mat meanFilter(const cv::Mat & input, cv::Size kernel_size);
     cv::Mat medianFilter(const cv::Mat & input, cv::Size kernel_size);
     cv::Mat bilateralFilter(const cv::Mat & input, cv::Size kernel_size);
