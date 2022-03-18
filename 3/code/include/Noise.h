@@ -14,8 +14,8 @@ public:
     cv::Mat addPepperSaltNoise(const cv::Mat & input, int num_noise);
     cv::Mat addGaussianNoise(const cv::Mat & input, int gain, double miu, double sigma);
     double generateGaussianSeq(double miu, double sigma);
-    void showImage(const cv::Mat & mat, const std::string & win_name, cv::Size size, int wait_key);
-    void gaussCallback(int pos, void *);
+//    void showImage(const cv::Mat & mat, const std::string & win_name, cv::Size size, int wait_key);
+//    void gaussCallback(int pos, void *);
 };
 
 

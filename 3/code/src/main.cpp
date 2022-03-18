@@ -43,9 +43,9 @@ int main()
 
     Filter filter;
     // Mean Filter
-    cv::Mat mean_pepper_image = filter.meanFilter(pepper_noise_image, cv::Size(3, 3));
+    cv::Mat mean_pepper_image = filter.meanFilter(pepper_noise_image, cv::Size(5, 5));
     showImage(mean_pepper_image, "Mean filter for pepper noise", image_size, 0);
-    cv::Mat mean_gauss_image = filter.meanFilter(gauss_noise_image, cv::Size(3, 3));
+    cv::Mat mean_gauss_image = filter.meanFilter(gauss_noise_image, cv::Size(5, 5));
     showImage(mean_gauss_image, "Mean filter for gaussian noise", image_size, 0);
     // Median Filter
     cv::Mat median_pepper_image = filter.medianFilter(pepper_noise_image, cv::Size(3, 3));
@@ -53,10 +53,10 @@ int main()
     cv::Mat median_gauss_image = filter.medianFilter(gauss_noise_image, cv::Size(3, 3));
     showImage(median_gauss_image, "Median filter for gaussian noise", image_size, 0);
     // Bilateral Filter
-    cv::Mat bilateral_pepper_image = filter.bilateralFilter(pepper_noise_image);
-    showImage(bilateral_pepper_image, "Bilateral filter for pepper image", image_size, 0);
-    cv::Mat bilateral_gauss_image = filter.bilateralFilter(gauss_noise_image);
-    showImage(bilateral_pepper_image, "Bilateral filter for gaussian image", image_size, 0);
+//    cv::Mat bilateral_pepper_image = filter.bilateralFilter(pepper_noise_image);
+//    showImage(bilateral_pepper_image, "Bilateral filter for pepper image", image_size, 0);
+//    cv::Mat bilateral_gauss_image = filter.bilateralFilter(gauss_noise_image);
+//    showImage(bilateral_pepper_image, "Bilateral filter for gaussian image", image_size, 0);
 
     return 0;
 }
