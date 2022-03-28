@@ -1,6 +1,9 @@
-//
-// Created by hty on 3/13/22.
-//
+/*
+ * @Description: Histogram Equalization
+ * @version: v1.0
+ * @Author: HTY
+ * @Date: 2022-03-13 03:43:40
+ */
 
 #ifndef INC_2_EQUALIZATION_H
 #define INC_2_EQUALIZATION_H
@@ -11,14 +14,9 @@
 #include <opencv2/imgproc/imgproc.hpp>
 
 class Equalization {
-private:
-    cv::Mat hist_value;
 public:
-    cv::Mat image;
-    cv::Mat histogram;
-    explicit Equalization(cv::Mat & mat);
-    cv::Mat getHistMat(const cv::Mat & mat);
-    cv::Mat equalize();
+    void getHistMat(cv::InputArray src, cv::OutputArray dst);
+    void equalize(cv::InputArray src, cv::OutputArray dst);
 };
 
 
