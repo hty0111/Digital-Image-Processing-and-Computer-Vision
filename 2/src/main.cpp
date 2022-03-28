@@ -10,7 +10,8 @@
 #include <opencv2/highgui/highgui.hpp>
 #include "../include/Equalization.h"
 
-void showImage(const cv::Mat & mat, const std::string & win_name, cv::Size size, int wait_key=0, const std::string & save_path="");
+void showImage(const cv::Mat & mat, const std::string & win_name, cv::Size size,
+               cv::Point point, int wait_key=0, const std::string & save_path="");
 
 int main()
 {
@@ -24,22 +25,21 @@ int main()
     }
 
     // display original image
-    showImage(gate_image, "Gate", cv::Size(600, 400),
-              -1, "../../image/gate_grey.png");
+    showImage(gate_image, "Gate", cv::Size(500, 400),
+              cv::Point(0, 0), -1, "../../image/gate_grey.png");
     showImage(arm_image, "Arm", cv::Size(300, 400),
-              0, "../../image/arm_grey.png");
+              cv::Point(0, 480), 0, "../../image/arm_grey.png");
 
     Equalization equalization;
 
     // display histogram of original image
     cv::Mat gate_hist, arm_hist;
-
     equalization.getHistMat(gate_image, gate_hist);
     equalization.getHistMat(arm_image, arm_hist);
-    showImage(gate_hist, "Gate Histogram", cv::Size(500, 500),
-              -1, "../../image/gate_hist.png");
-    showImage(arm_hist, "Arm Histogram", cv::Size(500, 500),
-              0, "../../image/arm_hist.png");
+    showImage(gate_hist, "Gate Histogram", cv::Size(400, 400),
+              cv::Point(580, 0), -1, "../../image/gate_hist.png");
+    showImage(arm_hist, "Arm Histogram", cv::Size(400, 400),
+              cv::Point(580, 480), 0, "../../image/arm_hist.png");
 
     // histogram equalize
     cv::Mat gate_equ, arm_equ;
@@ -47,28 +47,32 @@ int main()
     equalization.equalize(arm_image, arm_equ);
 
     // display equalized image
-    showImage(gate_equ, "Equalized Gate", cv::Size(1200, 900),
-              -1, "../../image/gate_equ.png");
+    showImage(gate_equ, "Equalized Gate", cv::Size(500, 400),
+              cv::Point(1000, 0), -1, "../../image/gate_equ.png");
     showImage(arm_equ, "Equalized Arm", cv::Size(300, 400),
-              0, "../../image/arm_equ.png");
-    
+              cv::Point(1000, 480), 0, "../../image/arm_equ.png");
+
     // display histogram of equalized image
     cv::Mat gate_equ_hist, arm_equ_hist;
     equalization.getHistMat(gate_equ, gate_equ_hist);
     equalization.getHistMat(arm_equ, arm_equ_hist);
-    showImage(gate_equ_hist, "Equalized Gate Histogram", cv::Size(500, 500),
-              -1, "../../image/gate_equ_hist.png");
-    showImage(arm_equ_hist, "Equalized Arm Histogram", cv::Size(500, 500),
-              0, "../../image/arm_equ_hist.png");
+    showImage(gate_equ_hist, "Equalized Gate Histogram", cv::Size(400, 400),
+              cv::Point(1580, 0), -1, "../../image/gate_equ_hist.png");
+    showImage(arm_equ_hist, "Equalized Arm Histogram", cv::Size(400, 400),
+              cv::Point(1580, 480), 0, "../../image/arm_equ_hist.png");
 
     return 0;
 }
 
 
-void showImage(const cv::Mat & mat, const std::string & win_name, cv::Size size, int wait_key, const std::string & save_path)
+void showImage(const cv::Mat & mat, const std::string & win_name, cv::Size size,
+               cv::Point point, int wait_key, const std::string & save_path)
 {
     cv::namedWindow(win_name, cv::WINDOW_NORMAL);
-    cv::resizeWindow(win_name, size);
+    if (!size.empty())
+        cv::resizeWindow(win_name, size);
+    if (point.x >=0 && point.y >= 0)
+        cv::moveWindow(win_name, point.x, point.y);
     cv::imshow(win_name, mat);
     if (wait_key >= 0)
         cv::waitKey(wait_key);

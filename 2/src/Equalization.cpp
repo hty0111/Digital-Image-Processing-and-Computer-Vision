@@ -7,10 +7,10 @@
 
 #include "../include/Equalization.h"
 
-void Equalization::getHistMat(cv::InputArray src, cv::OutputArray dst)
+void Equalization::getHistMat(cv::InputArray _src, cv::OutputArray _dst)
 {
     // get Mat headers for input arrays
-    cv::Mat src_mat = src.getMat();
+    cv::Mat src = _src.getMat();
 
     // get grayscale data
     cv::Mat hist_value;
@@ -18,7 +18,7 @@ void Equalization::getHistMat(cv::InputArray src, cv::OutputArray dst)
     const int histSize = 256;
     float range[] = {0, 256};
     const float * ranges[] = {range};
-    cv::calcHist(&src_mat, 1, &channels, cv::Mat(), hist_value,
+    cv::calcHist(&src, 1, &channels, cv::Mat(), hist_value,
                  1, &histSize, ranges, true, false);
 
     //　plot a grayscale histogram of the original image with a black background and white values
@@ -27,7 +27,7 @@ void Equalization::getHistMat(cv::InputArray src, cv::OutputArray dst)
     cv::Mat histGrey((int) max_value, 256, CV_8UC1, cv::Scalar::all(0));
     for (int i = 0; i < 256; i++)
         histGrey.col(i).rowRange(cv::Range((int) max_value - (int)hist_value.at<float>(i, 0), (int) max_value)) = 255;
-    cv::resize(histGrey, dst, cv::Size(500, 500));
+    cv::resize(histGrey, _dst, cv::Size(500, 500));
 }
 
 void Equalization::equalize(cv::InputArray _src, cv::OutputArray _dst)
