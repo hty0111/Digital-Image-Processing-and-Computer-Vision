@@ -18,7 +18,6 @@ public:
     cv::Mat histogram;
     explicit Equalization(cv::Mat & mat);
     cv::Mat getHistMat(const cv::Mat & mat);
-    void showImage(const cv::Mat & mat, const std::string & win_name, cv::Size size = cv::Size(1200, 900), int wait_key = -1);
     cv::Mat equalize();
 };
 
