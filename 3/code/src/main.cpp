@@ -9,16 +9,7 @@
 #include "../include/Noise.h"
 #include "../include/Filter.h"
 
-void showImage(const cv::Mat & mat, const std::string & win_name, cv::Size size, int wait_key, const std::string & save_path="")
-{
-    cv::namedWindow(win_name, cv::WINDOW_NORMAL);
-    cv::resizeWindow(win_name, size);
-    cv::imshow(win_name, mat);
-    if (wait_key >= 0)
-        cv::waitKey(wait_key);
-    if (!save_path.empty())
-        cv::imwrite(save_path, mat);
-}
+void showImage(const cv::Mat & mat, const std::string & win_name, cv::Size size, int wait_key, const std::string & save_path="");
 
 int main()
 {
@@ -61,9 +52,23 @@ int main()
               image_size, 0, "../../image/median_gauss.png");
     // Bilateral Filter
 //    cv::Mat bilateral_pepper_image = filter.bilateralFilter(pepper_noise_image);
-//    showImage(bilateral_pepper_image, "Bilateral filter for pepper image", image_size, 0);
+    cv::Mat bilateral_pepper_image;
+    filter.bilateralBlur(input_image, bilateral_pepper_image, 1, 1, 3);
+    showImage(bilateral_pepper_image, "Bilateral filter for pepper image", image_size, 0);
 //    cv::Mat bilateral_gauss_image = filter.bilateralFilter(gauss_noise_image);
 //    showImage(bilateral_pepper_image, "Bilateral filter for gaussian image", image_size, 0);
 
     return 0;
+}
+
+
+void showImage(const cv::Mat & mat, const std::string & win_name, cv::Size size, int wait_key, const std::string & save_path)
+{
+    cv::namedWindow(win_name, cv::WINDOW_NORMAL);
+    cv::resizeWindow(win_name, size);
+    cv::imshow(win_name, mat);
+    if (wait_key >= 0)
+        cv::waitKey(wait_key);
+    if (!save_path.empty())
+        cv::imwrite(save_path, mat);
 }
