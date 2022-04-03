@@ -1,6 +1,9 @@
-//
-// Created by hty on 3/17/22.
-//
+/*
+ * @Description: 
+ * @version: v1.0
+ * @Author: HTY
+ * @Date: 2022-03-17 20:02:06
+ */
 
 #ifndef CODE_FILTER_H
 #define CODE_FILTER_H
@@ -11,10 +14,21 @@
 
 class Filter {
 public:
-    cv::Mat meanFilter(const cv::Mat & input, cv::Size kernel_size);
-    cv::Mat medianFilter(const cv::Mat & input, cv::Size kernel_size);
-    cv::Mat bilateralFilter(const cv::Mat & input, cv::Size kernel_size);
+    class Data
+    {
+    public:
+        cv::Mat src;
+        std::string win_name;
+    };
 
+    void meanFilter(const cv::Mat & src, cv::Mat & dst, int kernel_size);
+    void medianFilter(const cv::Mat & src, cv::Mat & dst, int kernel_size);
+    void bilateralFilter(const cv::Mat & src, cv::Mat & dst, int kernel_size, double sigmaR, double sigmaD);
+
+    static void meanTrackbar(cv::Mat & src, const std::string & win_name);
+    static void meanCallback(int kernel_size, void * data);
+    static void medianTrackbar(cv::Mat & src, const std::string & win_name);
+    static void medianCallback(int kernel_size, void * data);
 };
 
 

@@ -12,4 +12,3 @@ find_package(OpenCV REQUIRED)
 add_executable(filter main.cpp Noise.cpp Filter.cpp)
 target_link_libraries(filter ${OpenCV_LIBS})
 
-

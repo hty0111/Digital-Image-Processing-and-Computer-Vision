@@ -68,9 +68,13 @@ int main()
 void showImage(const cv::Mat & mat, const std::string & win_name, cv::Size size,
                cv::Point point, int wait_key, const std::string & save_path)
 {
-    cv::namedWindow(win_name, cv::WINDOW_NORMAL);
     if (!size.empty())
+    {
+        cv::namedWindow(win_name, cv::WINDOW_NORMAL);
         cv::resizeWindow(win_name, size);
+    }
+    else
+        cv::namedWindow(win_name, cv::WINDOW_AUTOSIZE);
     if (point.x >=0 && point.y >= 0)
         cv::moveWindow(win_name, point.x, point.y);
     cv::imshow(win_name, mat);

@@ -1,6 +1,9 @@
-//
-// Created by hty on 3/17/22.
-//
+/*
+ * @Description: 
+ * @version: v1.0
+ * @Author: HTY
+ * @Date: 2022-03-17 16:55:58
+ */
 
 #ifndef CODE_Noise_H
 #define CODE_Noise_H
@@ -11,11 +14,24 @@
 
 class Noise {
 public:
-    cv::Mat addPepperSaltNoise(const cv::Mat & input, int num_noise);
-    cv::Mat addGaussianNoise(const cv::Mat & input, int gain, double miu, double sigma);
-    double generateGaussianSeq(double miu, double sigma);
-//    void showImage(const cv::Mat & mat, const std::string & win_name, cv::Size size, int wait_key);
-//    void gaussCallback(int pos, void *);
+    class Data
+    {
+    public:
+        cv::Mat src;
+        std::string win_name;
+        int param[3] = {2, 0, 3};
+    };
+
+    void addPepperNoise(const cv::Mat & src, cv::Mat & dst, int num_noise);
+    void addGaussNoise(const cv::Mat & src, cv::Mat & dst, double gain, double mu, double sigma);
+    double generateGaussSeq(double mu, double sigma);
+
+    static void pepperTrackbar(cv::Mat & src, const std::string & win_name);
+    static void gaussTrackbar(cv::Mat & src, const std::string & win_name);
+    static void pepperCallback(int pepper_num, void * data);
+    static void gaussGainCallback(int gain, void * data);
+    static void gaussMuCallback(int mu, void * data);
+    static void gaussSigmaCallback(int sigma, void *data);
 };
 
 
