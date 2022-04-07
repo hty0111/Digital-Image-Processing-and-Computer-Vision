@@ -18,7 +18,7 @@
 
 ## 2. 环境配置
 
-1. 运行环境： `python3`, `gcc/g++`, `cmake3.2`
+1. 运行环境： `Ubuntu18.04`, `python3`, `gcc/g++`, `cmake3.2`
 2. 使用的库： `opencv`
 
 ## 3. 编译运行
@@ -32,7 +32,8 @@ cmake ..
 make
 # 在binary目录下运行可执行文件，否则会出现路径错误
 cd bin
-./<executable file>	
+sudo chmod u+x ./filter
+./filter
 ```
 
 ​		运行后按任意键显示下一幅图片，**注意：如果卡了请耐心等待**。
