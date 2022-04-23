@@ -1,3 +1,7 @@
 .*
 !.gitignore
 !.git
+cmake-build-debug
+*make*
+*Make*
+!CmakeLists.txt

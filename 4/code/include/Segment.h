@@ -25,6 +25,8 @@ public:
     static void cannyTrackbar(cv::Mat & src, const std::string & win_name);
     static void cannyLowThrCallback(int low_threshold, void * data);
     static void cannyHighThrCallback(int high_threshold, void *data);
+
+    void getFreeman(const std::vector<cv::Point>& contours, std::vector<int>& freeman_code);
 };
 
 

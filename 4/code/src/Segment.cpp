@@ -35,3 +35,44 @@ void Segment::cannyHighThrCallback(int high_threshold, void *data)
     canny_data.high_threshold = high_threshold;
     cv::imshow(canny_data.win_name, dst);
 }
+
+int cnt = 0;
+void Segment::getFreeman(const std::vector<cv::Point>& contour, std::vector<int>& freeman_code)
+{
+    auto iter = contour.begin();
+    cv::Point point1 = *iter;
+    iter++;
+    cv::Point point2 = *iter;
+    while (iter != contour.end())
+    {
+        switch (point2.x - point1.x)
+        {
+            case 1:
+                switch (point2.y - point1.y)
+                {
+                    case 1: freeman_code.push_back(1); break;
+                    case 0: freeman_code.push_back(2); break;
+                    case -1: freeman_code.push_back(3); break;
+                }
+                break;
+            case 0:
+                switch (point2.y - point1.y)
+                {
+                    case 1: freeman_code.push_back(0); break;
+                    case -1: freeman_code.push_back(4); break;
+                }
+                break;
+            case -1:
+                switch (point2.y - point1.y)
+                {
+                    case 1: freeman_code.push_back(7); break;
+                    case 0: freeman_code.push_back(6); break;
+                    case -1: freeman_code.push_back(5); break;
+                }
+                break;
+        }
+        iter++;
+        point1 = point2;
+        point2 = *iter;
+    }
+}

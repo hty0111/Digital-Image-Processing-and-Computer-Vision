@@ -162,26 +162,43 @@ showImage(contour_image, "Contour image", image_size, 0, "../../result/contour_i
 
 ![contour_image](report.assets/contour_image.png)
 
-### 5.3 写入文件
+### 5.3 获取链码并写入文件
 
-​		链码的变量类型为`std::vector<std::vector<cv::Point>>`，使用`STL`容器的特性进行遍历，并结合`csv`以逗号分割的特点，将坐标点写入`contour_data.csv`中，每一行为一个特定的轮廓，每一格为特定轮廓上的一个点。
+​		`contour`的变量类型为`std::vector<std::vector<cv::Point>>`，使用`STL`容器的特性进行遍历，并结合`csv`以逗号分割的特点，将坐标点写入`contour_data.csv`中，每一行为一个特定的轮廓，每一格为特定轮廓上的一个点。
+
+​		为获取`freeman`链码，判断前后两点的位置关系，以下图形式确定编号，写在文件中`contour`坐标点的下一行，因此用两行分别表示一个轮廓的坐标和链码。
+
+![image-20220423213315051](report.assets/image-20220423213315051.png)
 
 ```cpp
-// write to file
+// get freeman code and write to file
+std::vector<int> freeman_code;
+Segment segment;
 std::ofstream outfile;
 outfile.open("../../result/contour_data.csv", std::ios::out);
 for (const auto & contour : contours)
 {
+    segment.getFreeman(contour, freeman_code);
+    outfile << "coordinate,";
     for (auto point : contour)
+    {
         outfile << "\"" << point << "\",";
+    }
     outfile << std::endl;
+    outfile << "freeman,";
+    for (auto code : freeman_code)
+    {
+        outfile << code << ",";
+    }
+    outfile << std::endl;
+    freeman_code.clear();
 }
 ```
 
-![image-20220408204339704](report.assets/image-20220408204339704.png)
+![image-20220423213119917](report.assets/image-20220423213119917.png)
 
 
 
 ## 六、总结
 
-​		本次作业要求实现前景背景的分割和轮廓提取等功能，分别用了大津法和Canny算子，因为它们实在太有名了。不过这张图的背景是全黑图像，本身区分就很明显，所以效果很好，如果把Canny的阈值调小则会产生更多轮廓边界。另外由于最近考试周太忙了所以这次就直接调用了内置函数，没来得及自己实现。（主要是边界链码提取写起来太麻烦了）
+​		本次作业要求实现前景背景的分割和轮廓提取等功能，分别用了大津法和Canny算子，因为它们实在太有名了。不过这张图的背景是全黑图像，本身区分就很明显，所以效果很好，如果把Canny的阈值调小则会产生更多轮廓边界。另外由于最近考试周太忙了所以除了链码部分都调用了内置函数。

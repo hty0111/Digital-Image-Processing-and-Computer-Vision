@@ -47,21 +47,34 @@ int main()
     // contour
     std::vector<std::vector<cv::Point>> contours;
     std::vector<cv::Vec4i> hierarchy;
-    cv::findContours(edge_image, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+    cv::findContours(edge_image, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_NONE);
+
+    // draw contour image
     cv::Mat contour_image = cv::Mat::zeros(input_image.rows, input_image.cols, CV_8UC3);
     cv::drawContours(contour_image, contours, -1, cv::Scalar(100, 100, 100));
     showImage(contour_image, "Contour image", image_size, 0, "../../result/contour_image.png");
 
-    // write to file
+    // get freeman code and write to file
+    std::vector<int> freeman_code;
+    Segment segment;
     std::ofstream outfile;
     outfile.open("../../result/contour_data.csv", std::ios::out);
     for (const auto & contour : contours)
     {
+        segment.getFreeman(contour, freeman_code);
+        outfile << "coordinate,";
         for (auto point : contour)
         {
             outfile << "\"" << point << "\",";
         }
         outfile << std::endl;
+        outfile << "freeman,";
+        for (auto code : freeman_code)
+        {
+            outfile << code << ",";
+        }
+        outfile << std::endl;
+        freeman_code.clear();
     }
 
     return 0;
