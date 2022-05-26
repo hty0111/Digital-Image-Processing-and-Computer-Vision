@@ -11,10 +11,14 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/opencv.hpp>
-#include "include/Restore.h"
+#include "include/Filter.h"
+#include "include/Equalization.h"
 
+
+bool isSave = false;
 void showImage(cv::Mat & mat, const std::string & win_name, cv::Size size, int wait_key=0, const std::string & save_path="",
                void (*pTrackbar)(cv::Mat & src, const std::string & win_name)=nullptr);
+
 
 int main(int argc, char* argv[])
 {
@@ -22,11 +26,6 @@ int main(int argc, char* argv[])
     boost::format read_fmt("../../images/%s.%s");
     boost::format save_fmt("../../images/%s_%s.png");
     std::string image_name, image_type;
-    if (argc == 2)
-    {
-        image_name = argv[1];
-        image_type = "png";
-    }
     if (argc == 3)
     {
         image_name = argv[1];
@@ -34,25 +33,29 @@ int main(int argc, char* argv[])
     }
     else
     {
-        image_name = "input_image";
+        image_name = "monkey";
         image_type = "bmp";
     }
 
-    cv::Mat input_image = cv::imread((read_fmt % image_name % image_type).str(), cv::IMREAD_GRAYSCALE);
+    cv::Mat input_image = cv::imread((read_fmt % image_name % image_type).str(), cv::IMREAD_UNCHANGED);
     if (!input_image.data)
     {
         std::cout << "Path error!" << std::endl;
         return -1;
     }
     else
-        std::cout << "image size: " << input_image.size << std::endl;
+        std::cout << "image size: " << input_image.size << std::endl <<  std::endl;
 
-    cv::Size image_size(1000, 400);
+    cv::Size image_size(0, 0);
     showImage(input_image, "input images", image_size);
 
+    Filter filter(11, 30);
+    cv::Mat wiener_image;
+    filter.wiener(input_image, wiener_image);
 
     return 0;
 }
+
 
 void showImage(cv::Mat & mat, const std::string & win_name, cv::Size size, int wait_key,
                const std::string & save_path, void (*pTrackbar)(cv::Mat& src, const std::string & win_name))
@@ -70,7 +73,7 @@ void showImage(cv::Mat & mat, const std::string & win_name, cv::Size size, int w
         (*pTrackbar)(mat, win_name);
     if (wait_key >= 0)
         cv::waitKey(wait_key);
-    if (!save_path.empty())
+    if (!save_path.empty() && isSave)
         cv::imwrite(save_path, mat);
 
 //    cv::destroyWindow(win_name);

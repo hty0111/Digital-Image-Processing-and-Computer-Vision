@@ -1,4 +1,4 @@
-# 形态学滤波与图像细化
+# 图像复原
 
 ​	**姓名**： 胡天扬
 
@@ -14,456 +14,171 @@
 
 ## 一、题目要求
 
-​		自选一幅灰度图像（最好是数字、文字图像，或具有细线条的图像），编程实现一下功能：
-
-​		（1）选用一种图像二值化方法，实现图像二值化，提取前景目标；
-
-​		（2）基于二值形态学滤波方法，二值化结果进行形态学滤波，实现小尺度噪点去除和孔洞填充；
-
-​		（3）实践一种图像细化算法，实现前景目标细化。
+​		图像是长度为30、逆时针方向角度为11、加有高斯白噪声的移动模糊图像。试用一种方法复原该图像。
 
 
 
 ## 二、原图
 
-![numbers](report.assets/numbers.png)
+![monkey](report.assets/monkey.bmp)
 
-​		一张彩色数字的图像，从 $0$ 到 $9$ 共10个数字。图像尺寸为`183 x 353`。
+​		图像为灰度图，尺寸为`256 x 256`。
 
 
 
-## 三、大津法二值化
+## 三、获取PSF
 
 ### 3.1 原理
 
-​		大津法又叫最大类间方差法，是于1979年由日本学者大津展之提出的一种对图像进行二值化的高效算法，是在判别与最小二乘法原理的基础上推导出来的。
+​		消除图像模糊的核心是获取系统的点扩散函数（point spread function (PSF) ）。PSF描述了一个成像系统对一个点光源物体的响应。在大多情况下，PSF可以认为像是一个能够表现未解析物体的图像中的一个扩展区块。函数上讲，PSF是成像系统传递函数的空间域表达。PSF是一个重要的概念，傅里叶光学、天文成像、医学影像、电子显微学和其他成像技术比如三维显微成像和荧光显微成像都有其身影。一个点状物体扩散的度是一个成像系统质量的度量。在非相关成像系统中，成像过程是在能量上是线性的，可以通过线性系统理论来表达，即A和B两个物体同时成像的时候，成像结果等同于A、B两物体独立成像的结果之和。更为复杂物体的图像可以看做是真实物体和PSF的卷积。
 
-​		设灰度值为 $i$ 的像素个数为 $x_i$，则像素总数为 $N=\sum_{i=0}^n x_i$，各灰度级的概率为 $p_i=\dfrac{n_i}{N}$，对于某一个阈值 $T$，我们可以将灰度级分为两组 $C_0=\{t|0\to T\},~C_1\{t|T+1\to255\}$，则 $C_0$ 的概率为 $w_0=\sum_{i=0}^T p_i$，均值为 $\mu_0=\sum_{i=0}^T \dfrac{i*p_i}{w_0}$，$C_1$ 的概率为 $w_1=\sum_{T+1}^{255} p_i$，均值为 $\mu_1=\sum_{T+1}^{255} \dfrac{i*p_i}{w_1}$，总均值为 $\mu=w_0\mu_0+w_1\mu_1$，最终需要最大化的方差为：
+​		在数学上，物平面域可以表示为
 $$
-\delta ^ { 2 } = w _ { 0 } ( \mu _ { 0 } - \mu ) ^ { 2 } + w _ { 1 } ( \mu _ { 1 } - \mu ) ^ { 2 } = w _ { 0 } w _ { 1 } ( \mu _ { 1 } - \mu _ { 0 } ) ^ { 2 }
+O\left(x_{o}, y_{o}\right)=\iint O(u, v) \delta\left(x_{o}-u, y_{o}-v\right)dudv
 $$
-​		获取了阈值后，将小于阈值的像素值置为0，大于阈值的像素值置为255。
+​		将物透射函数改写为上述形式，可以将像平面域计算为各个脉冲函数图像的叠加，即作为像平面的加权点扩展函数与物平面中相同的权重函数的叠加。因此，图像可以表示为
+$$
+I\left(x_{o}, y_{o}\right)=\iint O(u, v) \operatorname{PSF}\left(x_{i} / M-u, y_{i} / M-v\right) d u d v
+$$
+​		对于直线运动的模糊图像而言，系统的传递函数可以表示为
+$$
+{H}({u}, {v})=\int_{0}^{T} \exp \left\{-j 2 \pi\left[{u x} {x}_{0}({t})+{v} {y}_{0}({t})\right]\right\} {d} {t}
+$$
+​		这就是匀速直线运动所造成的图像模糊系统的传递函数，进行傅立叶反变换就可以得出系统的点扩展函数，由傅里叶变换的空间位移性质可知该传递函数是位移传递函数的积分。
 
 ### 3.2 代码
 
-​		变量命名与上述公式一致。
-
-```c++
-void Morphology::OSTU(const cv::Mat & src, cv::Mat & dst)
-{
-    dst = src.clone();
-
-    // calculate probability of each grey value
-    int size = src.cols * src.rows;
-    double p[256] = {0};
-    for (int i = 0; i < src.rows; i++) {
-        auto row_ptr = src.ptr<uchar>(i);
-        for (int j = 0; j < src.cols; j++)
-            p[row_ptr[j]] += 1.0;
-    }
-    for (double & i : p)
-        i /= size;
-
-    // calculate threshold according to formula of OSTU
-    int threshold;
-    double max_delta = 0, cur_delta;
-    for (int i = 0; i < 256; i++)
-    {
-        double w0 = 0, w1 = 0, mu0 = 0, mu1 = 0;
-        for (int j = 0; j < i; j++)
-            w0 += p[j];
-        w1 = 1 - w0;
-        for (int j = 0; j < 256; j++)
-            if (j < i)
-                mu0 += p[j] * (j+1) / w0;
-            else
-                mu1 += p[j] * (j+1) / w1;
-        cur_delta = w0 * w1 * pow(mu1-mu0, 2);
-        if (cur_delta > max_delta)
-        {
-            max_delta = cur_delta;
-            threshold = i;
-        }
-    }
-    std::cout << "OSTU threshold: " << threshold << std::endl;
-
-    // binarize the images
-    for (int i = 0; i < dst.rows; i++)
-    {
-        auto row_ptr = dst.ptr<uchar>(i);
-        for (int j = 0; j < dst.cols; j++)
-            row_ptr[j] = ((row_ptr[j] < threshold) ? 0 : 255);
-    }
-}
+```python
+def get_psf(src, angle, offset):
+    x_center = int((src.shape[0] - 1) / 2)
+    y_center = int((src.shape[1] - 1) / 2)
+    psf = np.zeros(src.shape)
+    for i in range(offset):
+        x_offset = round(np.sin(angle * np.pi / 180) * i)
+        y_offset = round(np.cos(angle * np.pi / 180) * i)
+        psf[int(x_center - x_offset), int(y_center + y_offset)] = 1
+    return psf
 ```
 
 ### 3.3 运行结果
 
-<img src="report.assets/numbers_grey.png" alt="numbers_grey" style="zoom:80%;" />
-
-<center>灰度图像</center>
-
-<img src="report.assets/numbers_binary-16528419606262.png" alt="numbers_binary" style="zoom:80%;" />
-
-<center>大津法二值化后图像</center>
+<img src="report.assets/image-20220526222951971.png" alt="image-20220526222951971" style="zoom:50%;" />
 
 
 
-## 四、腐蚀
+## 四、维纳滤波
 
 ### 4.1 原理
 
-​		腐蚀是缩小图像，去除小沟壑细节的一种操作，其实质造成图像的边界收缩，可以用来消除小且无意义的目标物，表达式为：
-$$
-H \odot B \, = \, \{ x , Y \, | ( B ) _ { _ { \chi } } \in A \}
-$$
-​		该式子表示用结构B腐蚀A，需要注意的是B中需要定义一个原点，B的移动的过程与卷积核移动的过程一致，同卷积核与图像有重叠之后再计算一样。当B的原点平移到图像A的像元 (x, y) 时，如果B完全被包含在图像A重叠的区域，也就是B中为1的元素位置上对应的A图像值全部也为1，则将输出图像对应的像元 (x,y) 赋值为1，否则赋值为0。
+​		在信号处理中，维纳滤波是常用的降噪方法，它能够把实际信号从带有噪声的观测量中提取出来，无论是在语言信号还是图像信号中，维纳滤波都有重要的应用。维纳滤波是一种线性最小均方误差（LMMSE)估计,线性指的是这种估计形式是线性的，最小方差则是我们后面构造滤波器的优化准则，也就是说实际信号与估计量的差 $y-\hat{y}$ 要有最小的方差。而维纳滤波就是要构造一种滤波器，使得观测信号通过滤波器后能够得到的输出是实际信号的最小均方误差估计。
 
-<img src="report.assets/image-20220518002848289.png" alt="image-20220518002848289" style="zoom: 67%;" />
+​		设运动图像为 $f(x,y)$，其傅里叶变换为 $F(u,v)$，设模糊后的图像为 $g(x,y)$，其傅里叶变换为 $G(u,v)$，通过 $F(u,v)$ 和 $H(u,v)$ 频域相乘得到 $G(u,v)$，即
+$$
+G(u, v)=F(u, v) H(u, v)
+$$
+​		维纳滤波复原公式如下，当 $K=0$ 时，即为逆滤波
+$$
+\hat{F}(u, v)=\frac{G(u, v)}{H(u, v)} \frac{|H(u, v)|^{2}}{\left(|H(u, v)|^{2}+K\right)}
+$$
 
 ### 4.2 代码
 
-​		这里腐蚀结构B选择为规则的正方形，核半径作为参数传入。
+​		这里的参数 $var$ 和 $K$ 由自己设定，其中 $var$ 是估计的噪声方差。
 
 ```c++
-void Morphology::erode(const cv::Mat & src, cv::Mat & dst, int kernel_size)
-{
-    dst = cv::Mat::zeros(src.size(), src.type());
-    int c2e = (int) (kernel_size / 2);    // distance of kernel center to edge
-
-    // traverse points on input images
-    for (int i = c2e; i < src.rows - c2e; i++)
-        for (int j = c2e; j < src.cols - c2e; j++)
-        {
-            // extract ROI
-            int flag = 0;   // flag == 1 means erosion
-            // traverse points on kernel
-            for (int x = -c2e; x < c2e; x++)
-            {
-                for (int y = -c2e; y < c2e; y++)
-                    if (src.at<uchar>(i+x, j+y) == 0)
-                    {
-                        flag = 1;
-                        break;
-                    }
-                if (flag)
-                    break;
-            }
-            dst.at<uchar>(i, j) = (flag ? 0 : 255);
-        }
-c}
+def wiener(src, psf, var, K=0.02):
+    src_fft = np.fft.fft2(src)
+    psf_fft = np.fft.fft2(psf) + var
+    dst = np.fft.ifft2(src_fft * np.conj(psf_fft) / (np.abs(psf_fft) ** 2 + K))
+    dst = np.abs(np.fft.fftshift(dst))
+    return dst
 ```
 
 ### 4.3 运行结果
 
-<img src="report.assets/numbers_binary-16528420493463.png" alt="numbers_binary" style="zoom:80%;" />
+​											逆滤波 (K=0)									维纳滤波 (K=0.02)
 
-<center>二值化图像</center>
-
-<img src="report.assets/numbers_erode.png" alt="numbers_erode" style="zoom:80%;" />
-
-<center>腐蚀后图像</center>
-
-​		可以看到边缘细小毛刺被去除，但也导致内部孔洞被放大。
+<center><img src="report.assets/inverse.png" alt="inverse" style="zoom:80%;" />			<img src="report.assets/wiener.png" alt="wiener" style="zoom:80%;" /></center>
 
 
 
-## 五、膨胀
+## 五、其他 
 
-### 5.1 原理
+### 5.1 主函数
 
-​		膨胀会使目标区域范围“变大”，将于目标区域接触的背景点合并到该目标物中，使目标边界向外部扩张，作用就是可以用来填补目标区域中某些空洞以及消除包含在目标区域中的小颗粒噪声。
-$$
-A \oplus B=\left\{x, y \mid(B)_{x v} \cap A \neq \varnothing\right\}
-$$
-​		该式子表示用结构B膨胀A，将结构元素B的原点平移到图像像元 (x,y) 位置。如果B在图像像元 (x,y) 处与A的交集不为空，也就是B中为1的元素位置上对应A的图像值至少有一个为1，则输出图像对应的像元 (x,y) 赋值为1，否则赋值为0。
+```python
+def main():
+    args = get_args()
+    input_image = read_image(args.image_root, args.image_name)
+    psf_image = get_psf(input_image, args.motion_angle, args.motion_offset)
+    inverse_image = wiener(input_image, psf_image / psf_image.sum(), 0).astype(np.uint8)
+    wiener_image = wiener(input_image, psf_image / psf_image.sum(), args.noise_var).astype(np.uint8)
 
-<img src="report.assets/image-20220518100428314.png" alt="image-20220518100428314" style="zoom: 67%;" />
-
-### 5.2 代码
-
-```c++
-void Morphology::dilate(const cv::Mat &src, cv::Mat &dst, int kernel_size)
-{
-    dst = cv::Mat::zeros(src.size(), src.type());
-    int c2e = (int) (kernel_size / 2);    // distance of kernel center to edge
-
-    // traverse points on input images
-    for (int i = c2e; i < src.rows - c2e; i++)
-        for (int j = c2e; j < src.cols - c2e; j++)
-            if (src.at<uchar>(i, j) == 255)
-                // traverse points on kernel
-                for (int x = -c2e; x < c2e; x++)
-                    for (int y = -c2e; y < c2e; y++)
-                        dst.at<uchar>(i+x, j+y) = 255;
-}
+    # visualize
+    show_image("Original image", input_image, size=(600, 600))
+    show_image("PSF", psf_image, size=(600, 600))
+    show_image("Inverse image", inverse_image, "inverse.png", args.image_root, args.save_image, size=(600, 600))
+    show_image("Wiener image", wiener_image, "wiener.png", args.image_root, args.save_image, size=(600, 600))
+    plt.figure(figsize=(18, 8))
+    plt.subplot(141), plt.title("Original image"), plt.axis('off'), plt.imshow(input_image, 'gray')
+    plt.subplot(142), plt.title("PSF"), plt.axis('off'), plt.imshow(psf_image, 'gray')
+    plt.subplot(143), plt.title("Inverse filter"), plt.axis('off'), plt.imshow(inverse_image, 'gray')
+    plt.subplot(144), plt.title("Wiener filter"), plt.axis('off'), plt.imshow(wiener_image, 'gray')
+    plt.tight_layout()
+    plt.savefig(os.path.join(args.image_root, "results.png"))
+    plt.show()
 ```
 
-### 5.3 运行结果
+### 5.2 命令行参数
 
-<img src="report.assets/numbers_binary-16528424586924.png" alt="numbers_binary" style="zoom:80%;" />
-
-<center>二值化图像</center>
-
-<img src="report.assets/numbers_dilate.png" alt="numbers_dilate" style="zoom:80%;" />
-
-<center>膨胀后图像</center>
-
-​		可以看到内部孔洞被填充，整体更为饱满。
-
-
-
-## 六、开运算
-
-### 6.1 原理
-
-​		开运算即先腐蚀运算，再膨胀运算，能够除去孤立的小点，毛刺和小桥，把细微连在一起的两块目标分开。且不同的结构元素的选择导致了不同的分割，即提取出不同的特征。
-
-<img src="report.assets/image-20220518105730530.png" alt="image-20220518105730530" style="zoom: 67%;" />
-
-### 6.2 代码
-
-```c++
-void Morphology::open(cv::Mat &src, cv::Mat &dst, int erode_size, int dilate_size)
-{
-    cv::Mat erode_output;
-    erode(src, erode_output, erode_size);
-    dilate(erode_output, dst, dilate_size);
-}
+```python
+def get_args():
+    parser = argparse.ArgumentParser(description="Arguments", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("--image_name",     type=str,   default="monkey.bmp",   help="Input image name")
+    parser.add_argument("--image_root",     type=str,   default="./images",     help="Root of images")
+    parser.add_argument("--save_image",     action="store_true",                help="Save images to image_root")
+    parser.add_argument("--motion_angle",   type=float, default=11,             help="Rotation angle of image")
+    parser.add_argument("--motion_offset",  type=float, default=30,             help="Offset of image")
+    parser.add_argument("--noise_var",      type=float, default=0.02,           help="Variance of Gaussian noise")
+    return parser.parse_args()
 ```
 
-### 6.3 运行结果
+​		若要保存图像则在命令行运行时加入`--save_image`。
 
-<img src="report.assets/numbers_binary-16528427469385.png" alt="numbers_binary" style="zoom:80%;" />
+### 5.3 读取图像
 
-<center>二值化图像</center>
-
-<img src="report.assets/numbers_open.png" alt="numbers_open" style="zoom:80%;" />
-
-<center>开运算后图像</center>
-
-​		可以看到边缘噪点被去除，边缘变得更为平滑，同时图像内部的孔洞比单纯的腐蚀运算更小，效果更好。
-
-
-
-## 七、闭运算
-
-### 7.1 原理
-
-​		闭运算即先膨胀运算，再腐蚀运算，能够填平小孔，弥合小裂缝，把两个细微连接的图块封闭在一起，通过填充图像的凹角来滤波图像。
-
-<img src="report.assets/image-20220518110320065.png" alt="image-20220518110320065" style="zoom: 67%;" />
-
-### 7.2 代码
-
-```c++
-void Morphology::close(cv::Mat &src, cv::Mat &dst, int erode_size, int dilate_size)
-{
-    cv::Mat dilate_output;
-    dilate(src, dilate_output, dilate_size);
-    erode(dilate_output, dst, erode_size);
-}
+```python
+def read_image(root, name):
+    image_path = os.path.join(root, name)
+    if not os.path.isfile(image_path):
+        print("Path error!")
+        exit()
+    input_image = cv2.imread(image_path, 0)
+    print("image shape: {}".format(input_image.shape))
+    return input_image
 ```
 
-### 7.3 运行结果
+### 5.4 展示单幅图像
 
-<img src="report.assets/numbers_binary-16528430229346.png" alt="numbers_binary" style="zoom:80%;" />
+```python
+def show_image(win_name, image, save_name=None, save_path=None, isSave=False, wait_key=0, size=None):
+    if size is not None and size != (0, 0):
+        cv2.namedWindow(win_name, cv2.WINDOW_NORMAL)
+        cv2.resizeWindow(win_name, size[0], size[1])
+    else:
+        cv2.namedWindow(win_name, cv2.WINDOW_AUTOSIZE)
 
-<center>二值化图像</center>
-
-<img src="report.assets/numbers_close.png" alt="numbers_close" style="zoom:80%;" />
-
-<center>闭运算后图像</center>
-
-​		可以看到内部孔洞被完全填平，同时边缘的毛刺比单纯的膨胀运算要小，效果更好。
-
-
-
-## 八、击中击不中变换
-
-### 8.1 原理
-
-​		击中击不中变换 $(Hit~or~Miss~Transform,~HMT)$ 是形态学形状检测的基本工具，是用来查找像素局部模式的形态学运算符。对于两个不相交集合 $B={B_1,~B_2}$，称 $B$ 为复合结构元素。则击中击不中变换为：
-$$
-X \otimes B=\left\{x: B_{1} \subset X \text { 且 } B_{2} \subset X^{C}\right\}
-$$
-​		即用 $B_1$ 去腐蚀 $X$，然后用 $B_2$ 去腐蚀 $X$ 的补集，得到的结果相减就是击中击不中变换。
-
-​		$HMT$ 只能作用于二值图像，结构元（核）元素值由0、1、-1组成。操作时，结构元在图像上滑动，覆盖一小片与核大小一样的区域，然后逐一对比，核的值为1时，覆盖区域对应位置必须为255，而核值为-1时，则必须为0，核值为0时对应像素为0和255均可，如果覆盖区域所有的位置均满足上述要求，则表示击中，锚点位置设置为255，如果有任意一个位置不满足，则表示击不中，锚点位置设置为0。
-
-​		对于骨架细化而言，就是利用经验上的一组结构元，不断循环重复的进行 $HMT$ 变换，直至结果收敛（不在变换）。单次细化公式定义为：
-$$
-A \otimes B=A-(A \circledast B)=A \cap(A \circledast B)^{c}
-$$
-其中 $A$ 为源图像，$B$ 为结构元，$\{B\}=\left\{B^{1}, B^{2}, B^{3}, \cdots, B^{n}\right\}$，依据这一结构元序列将细化定义为：
-$$
-A \otimes\{B\}=\left(\left(\cdots\left(\left(A \otimes B^{1}\right) \otimes B^{2}\right) \cdots\right) \otimes B^{n}\right)
-$$
-<img src="report.assets/image-20220518111642496.png" alt="image-20220518111642496" style="zoom: 67%;" />
-
-### 8.2 代码
-
-​		选取设置最大迭代上限为100次。选择常用的一组结构元序列。
-
-```c++
-class Morphology {
-private:
-    int max_iter = 100;
-    std::vector< std::vector< std::vector<int> > > HMT_kernel = {
-        {{-1,-1,-1}, {0,1,0}, {1,1,1}},
-        {{0,-1,-1}, {1,1,-1}, {1,1,0}},
-        {{1,0,-1}, {1,1,-1}, {1,0,-1}},
-        {{1,1,0}, {1,1,-1}, {0,-1,-1}},
-        {{1,1,1}, {0,1,0}, {-1,-1,-1}},
-        {{0,1,1}, {-1,1,1}, {-1,-1,0}},
-        {{-1,0,1}, {-1,1,1}, {-1,0,1}},
-        {{-1,-1,0}, {-1,1,1}, {0,1,1}},
-    };
+    cv2.imshow(win_name, image)
+    if wait_key >= 0:
+        cv2.waitKey(wait_key)
+    if save_path is not None and isSave:
+        cv2.imwrite(os.path.join(save_path, save_name), image)
 ```
 
-```c++
-void Morphology::HMT(const cv::Mat &src, cv::Mat &dst)
-{
-    int kernel_size = (int) HMT_kernel[0][0].size();
-    int c2e = (int) (kernel_size / 2);    // distance of kernel center to edge
-
-    cv::Mat input = src.clone(), output = src.clone();
-    cv::Mat roi = cv::Mat::zeros(cv::Size(kernel_size, kernel_size), src.type());
-
-    int iter = 0;
-    while (true)
-    {
-        // traverse templates to HMT
-        for (auto kernel : HMT_kernel)
-        {
-            std::vector<cv::Point> points;  // points failed to hit
-            // traverse points on input images
-            for (int i = 0; i < input.rows - 2*c2e; i++)
-                for (int j = 0; j < input.cols - 2*c2e; j++)
-                {
-                    bool flag = true;
-                    // traverse points on kernel
-                    for (int x = 0; x < kernel_size; x++)
-                        for (int y = 0; y < kernel_size; y++)
-                            if ((kernel[x][y] == 1 && input.at<uchar>(i+x, j+y) == 0) ||
-                                (kernel[x][y] == -1 && input.at<uchar>(i+x, j+y) == 255))
-                                flag = false;
-                    if (flag)
-                        points.emplace_back(i+1, j+1);
-                }
-            for (auto point : points)
-                output.at<uchar>(point.x, point.y) = 0;
-        }
-
-        iter++;
-        // conditions on termination
-        if ((iter >= max_iter) || (cv::countNonZero((output != input)) == 0))
-        {
-            dst = output.clone();
-            std::cout << "HTM iter times: " << iter << std::endl;
-            break;
-        }
-        input = output.clone();
-    }
-}
-```
-
-### 8.3 运行结果
-
-<img src="report.assets/numbers_binary-16528440292867.png" alt="numbers_binary" style="zoom:80%;" />
-
-<center>二值化图像</center>
-
-<img src="report.assets/numbers_hmt.png" alt="numbers_hmt" style="zoom:80%;" />
-
-<center>骨架细化后图像</center>
+​		**这里遇到一个大坑，`opencv`在显示傅里叶变换后的图像时，必须转换成`np.uint8`类型，否则只能用`matplotlib`显示。**
 
 
 
-## 九、其他
+## 六、总结
 
-### 9.1 主函数
-
-```c++
-int main(int argc, char* argv[])
-{
-    // read images
-    boost::format read_fmt("../../images/%s.%s");
-    boost::format save_fmt("../../images/%s_%s.png");
-    std::string image_name, image_type;
-    if (argc == 2)
-    {
-        image_name = argv[1];
-        image_type = "png";
-    }
-    if (argc == 3)
-    {
-        image_name = argv[1];
-        image_type = argv[2];
-    }
-    else
-    {
-        image_name = "dragon";
-        image_type = "jpeg";
-    }
-
-    cv::Mat input_image = cv::imread((read_fmt % image_name % image_type).str(), cv::IMREAD_GRAYSCALE);
-    if (!input_image.data)
-    {
-        std::cout << "Path error!" << std::endl;
-        return -1;
-    }
-    else
-        std::cout << "image size: " << input_image.size << std::endl;
-
-    cv::Size image_size(1000, 400);
-    showImage(input_image, "input images", image_size, 0, (save_fmt % image_name % "grey").str());
-
-    Morphology morphology;
-    // OSTU
-    cv::Mat binary_image;
-    morphology.OSTU(input_image, binary_image);
-    showImage(binary_image, "binary images", image_size, 0, (save_fmt % image_name % "binary").str());
-
-    // erosion
-    cv::Mat erode_image;
-    morphology.erode(binary_image, erode_image);
-    showImage(erode_image, "erode images", image_size, 0, (save_fmt % image_name % "erode").str());
-
-    // dilation
-    cv::Mat dilate_image;
-    morphology.dilate(binary_image, dilate_image);
-    showImage(dilate_image, "dilate images", image_size, 0, (save_fmt % image_name % "dilate").str());
-
-    // open operation
-    cv::Mat open_image;
-    morphology.open(binary_image, open_image, 5, 5);
-    showImage(open_image, "open images", image_size, 0, (save_fmt % image_name % "open").str());
-
-    // close operation
-    cv::Mat close_image;
-    morphology.close(binary_image, close_image, 5, 5);
-    showImage(close_image, "close images", image_size, 0, (save_fmt % image_name % "close").str());
-
-    // HMT
-    cv::Mat hmt_image;
-    morphology.HMT(close_image, hmt_image);
-    showImage(hmt_image, "HMT images", image_size, 0, (save_fmt % image_name % "hmt").str());
-
-    return 0;
-}
-```
-
-​		`code/images/`文件夹下还存放了另外两张图像进行相关操作的结果，代码运行详见`README`。
-
-![dragon](report.assets/dragon-16528444724708.jpeg)
-
-![dragon_hmt](report.assets/dragon_hmt.png)
-
-<center><img src="report.assets/characters.jpeg" alt="characters" style="zoom:30%;" />    <img src="report.assets/characters_hmt.png" alt="characters_hmt" style="zoom:30%;" /></center>
-
-
-
-## 十、总结
-
-​		本次作业要求实现形态学滤波的相关操作，大津法和开闭运算在理解了原理后都比较容易，相对而言骨架细化的原理较为复杂，同时结构元序列的选取会对结果造成很大影响，这里就直接用了最常用的一组结构没有自己调整，骨架提取还有另外的几种方法，不过效果各异，没有明显的优劣。
+​		本次作业为图像复原，由于高斯噪声的方差未知，因此基本可以直接使用维纳滤波。这次最头疼的地方不是原理部分，而是图像像素的操作，`cpp`对像素的操作实在过于复杂了，再加上需要考虑不同数据类型的转换和精度损失，以及傅里叶变换等也没有很对应的函数，所以写完PSF之后就放弃了，也是我第一次在本课程中用`python`来编程，不得不说编程效率是真的高，写起来是真的爽。
