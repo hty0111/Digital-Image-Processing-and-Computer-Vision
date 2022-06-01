@@ -69,7 +69,7 @@ sudo chmod u+x ./feature_matching
 
 | Version number | Updated time | Updated content         |
 | -------------- | ------------ | ----------------------- |
-| v1.0           | 2022.5.28    | ORB、SIFT、SURF特征变化 |
+| v1.0           | 2022.5.28    | ORB、SIFT、SURF特征提取 |
 
 ## 6. 作者
 
